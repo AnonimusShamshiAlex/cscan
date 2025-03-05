@@ -2,8 +2,8 @@
 
 Linux
 
-g++ -o csan csan.c
+g++ -o csсan csсan.c
 
 Исползвания
 
-./csan 192.168.1
+./csсan 192.168.1
