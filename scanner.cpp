@@ -14,11 +14,12 @@ std::condition_variable cv;
 std::queue<std::pair<std::string, int>> taskQueue;
 bool stop = false;
 
-// Цвета для терминала
+// Цвета терминала
 const std::string GREEN = "\033[1;32m";
 const std::string RED = "\033[1;31m";
 const std::string RESET = "\033[0m";
 
+// Сканирование одного порта
 void scanPort(const std::string& ip, int port) {
     int sock = socket(AF_INET, SOCK_STREAM, 0);
     if (sock < 0) {
@@ -27,7 +28,7 @@ void scanPort(const std::string& ip, int port) {
     }
 
     struct timeval timeout;
-    timeout.tv_sec = 1; // Тайм-аут 1 секунда
+    timeout.tv_sec = 1;
     timeout.tv_usec = 0;
     setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, (const char*)&timeout, sizeof(timeout));
 
@@ -37,16 +38,15 @@ void scanPort(const std::string& ip, int port) {
     inet_pton(AF_INET, ip.c_str(), &addr.sin_addr);
 
     if (connect(sock, (sockaddr*)&addr, sizeof(addr)) == 0) {
-        // Успешное подключение (открытый порт)
         std::cout << GREEN << "Открытый порт найден: " << ip << ":" << port << RESET << "\n" << std::flush;
     } else {
-        // Неудачная попытка (закрытый порт)
         std::cout << RED << "Неудачная попытка: " << ip << ":" << port << RESET << "\n" << std::flush;
     }
 
     close(sock);
 }
 
+// Рабочий поток
 void worker() {
     while (true) {
         std::pair<std::string, int> task;
@@ -65,9 +65,10 @@ void worker() {
     }
 }
 
+// Генерация IP-адресов в подсети
 std::vector<std::string> generateIPs(const std::string& baseIP) {
     std::vector<std::string> ips;
-    for (int i = 1; i <= 254; ++i) { // Генерация IP-адресов от .1 до .254
+    for (int i = 1; i <= 254; ++i) {
         std::ostringstream oss;
         oss << baseIP << "." << i;
         ips.push_back(oss.str());
@@ -82,12 +83,14 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    std::string baseIP = argv[1]; // Получаем базовый IP-адрес из аргументов командной строки
+    std::string baseIP = argv[1];
 
-    // Список портов для проверки
-    std::vector<int> portsToCheck = {21, 22, 3389, 80, 3306, 554, 9100, 23, 5900};
+    // 🆕 Порты: добавлены IoT — Tuya, Yeelight, ESPHome и пр.
+    std::vector<int> portsToCheck = {
+        21, 22, 23, 80, 443, 554, 8080, 3306, 3389, 5900, 9100,
+        6666, 6668, 55443, 8888, 5353, 1982, 5683
+    };
 
-    // Генерация всех IP-адресов в подсети
     auto ips = generateIPs(baseIP);
 
     {
@@ -98,9 +101,10 @@ int main(int argc, char* argv[]) {
             }
         }
     }
+
     std::cout << "Количество задач в очереди: " << taskQueue.size() << "\n";
 
-    int threadCount = 16; // Увеличиваем количество потоков для ускорения
+    int threadCount = 16;
     std::vector<std::thread> threads;
     for (int i = 0; i < threadCount; ++i) {
         threads.emplace_back(worker);
