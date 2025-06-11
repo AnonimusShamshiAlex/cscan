@@ -2,8 +2,7 @@
 
 Linux
 
-g++ -o csсan csсan.c
+g++ scanner.cpp -o scanner -pthread
+./scanner 192.168.1
 
-Исползвания
 
-./csсan 192.168.1
