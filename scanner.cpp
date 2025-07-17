@@ -16,7 +16,7 @@ bool stop = false;
 
 // Цвета терминала
 const std::string GREEN = "\033[1;32m";
-const std::string RED = "\033[1;31m";
+const std::string RED   = "\033[1;31m";
 const std::string RESET = "\033[0m";
 
 // Сканирование одного порта
@@ -35,7 +35,12 @@ void scanPort(const std::string& ip, int port) {
     sockaddr_in addr;
     addr.sin_family = AF_INET;
     addr.sin_port = htons(port);
-    inet_pton(AF_INET, ip.c_str(), &addr.sin_addr);
+
+    if (inet_pton(AF_INET, ip.c_str(), &addr.sin_addr) <= 0) {
+        std::cerr << "Неверный IP-адрес: " << ip << "\n";
+        close(sock);
+        return;
+    }
 
     if (connect(sock, (sockaddr*)&addr, sizeof(addr)) == 0) {
         std::cout << GREEN << "Открытый порт найден: " << ip << ":" << port << RESET << "\n" << std::flush;
@@ -85,10 +90,10 @@ int main(int argc, char* argv[]) {
 
     std::string baseIP = argv[1];
 
-    // 🆕 Порты: добавлены IoT — Tuya, Yeelight, ESPHome и пр.
+    // Список портов для проверки (включая SMB и прокси)
     std::vector<int> portsToCheck = {
-        21, 22, 23, 80, 443, 554, 8080, 3306, 3389, 5900, 9100,
-        6666, 6668, 55443, 8888, 5353, 1982, 5683
+        21, 22, 23, 80, 443, 445, 554, 7070, 8080, 3306, 3389,
+        5900, 9100, 6666, 6668, 55443, 8888, 5353, 1982, 5683
     };
 
     auto ips = generateIPs(baseIP);
@@ -111,7 +116,7 @@ int main(int argc, char* argv[]) {
     }
 
     {
-        std::lock_guard<std::mutex> lock(queueMutex);
+        std::unique_lock<std::mutex> lock(queueMutex);
         stop = true;
     }
     cv.notify_all();
