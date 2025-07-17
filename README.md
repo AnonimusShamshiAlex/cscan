@@ -2,7 +2,7 @@
 
 Linux
 
-g++ scanner.cpp -o scanner -pthread
+g++ -std=c++17 -pthread scanner.cpp -o scanner
 
 ./scanner 192.168.1
 
